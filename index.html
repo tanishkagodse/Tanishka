@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web Exam - Fundamentals</title>
+  <style>
+    :root {
+      --primary: #2a7ade;
+      --bg: #f7f9fc;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --card: #ffffff;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      line-height: 1.6;
+    }
+    header {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 8px; background: var(--primary);
+      display: grid; place-items: center; color: white; font-weight: 700;
+    }
+    .exam-meta {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 0.75rem; align-items: center; margin-top: 0.5rem;
+    }
+    .badge {
+      padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.875rem; color: var(--muted); background: #fff;
+    }
+    .timer { font-weight: 600; color: var(--danger); }
+    .progress {
+      height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-top: 0.75rem;
+    }
+    .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 200ms ease; }
+    main .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1rem; margin: 1rem 0;
+    }
+    h1, h2, h3 { margin: 0.2rem 0 0.6rem; }
+    .question {
+      padding: 0.5rem 0 0.75rem; border-bottom: 1px dashed var(--border);
+    }
+    .question:last-child { border-bottom: none; }
+    .q-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .q-index { font-weight: 600; color: var(--muted); }
+    .options { margin-top: 0.5rem; display: grid; gap: 0.5rem; }
+    .option {
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem;
+      border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff;
+    }
+    .option input { accent-color: var(--primary); }
+    .option.correct { border-color: #86efac; background: #f0fdf4; }
+    .option.incorrect { border-color: #fecaca; background: #fff1f2; }
+    .actions {
+      display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem;
+    }
+    button, .link-btn {
+      padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer;
+      font-weight: 600;
+    }
+    .primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .muted { color: var(--muted); }
+    .hidden { display: none !important; }
+    .score {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 0.75rem;
+    }
+    .stat {
+      border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem; background: #fff;
+    }
+    .stat h3 { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .stat .value { font-size: 1.25rem; font-weight: 700; }
+    .notice { font-size: 0.9rem; color: var(--muted); }
+    footer { text-align: center; color: var(--muted); padding: 1rem 0 2rem; }
+    .tag { font-size: 0.8rem; padding: 0.125rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; }
+    .correct-tag { color: var(--success); border-color: #86efac; background: #f0fdf4; }
+    .incorrect-tag { color: var(--danger); border-color: #fecaca; background: #fff1f2; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">EX</div>
+        <div>
+          <h1>Web Exam: Frontend Fundamentals</h1>
+          <div class="exam-meta">
+            <span class="badge">Duration: 10 minutes</span>
+            <span class="badge">Total: 5 questions</span>
+            <span class="timer" id="timer" aria-live="polite">10:00</span>
+          </div>
+          <div class="progress" aria-hidden="true">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" id="introCard">
+      <h2>Instructions</h2>
+      <ul>
+        <li><strong>Answer all questions:</strong> Select one option per question.</li>
+        <li><strong>Timer:</strong> The exam auto-submits when the timer ends.</li>
+        <li><strong>Review mode:</strong> After submission, you can reveal correct answers.</li>
+      </ul>
+      <div class="actions">
+        <button class="primary" id="startBtn">Start exam</button>
+        <button id="resetBtn" class="link-btn">Reset</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="examCard" aria-labelledby="examTitle">
+      <h2 id="examTitle">Questions</h2>
+
+      <div id="questions"></div>
+
+      <div class="actions">
+        <button class="primary" id="submitBtn">Submit</button>
+        <button id="reviewBtn" class="hidden">Review answers</button>
+      </div>
+      <p class="notice" id="unansweredNotice"></p>
+    </section>
+
+    <section class="card hidden" id="resultCard">
+      <h2>Results</h2>
+      <div class="score">
+        <div class="stat">
+          <h3>Score</h3>
+          <div class="value" id="scoreValue">0 / 5</div>
+        </div>
+        <div class="stat">
+          <h3>Accuracy</h3>
+          <div class="value" id="accuracyValue">0%</div>
+        </div>
+        <div class="stat">
+          <h3>Time used</h3>
+          <div class="value" id="timeUsed">0:00</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="retryBtn">Retry</button>
+        <button id="toggleReviewBtn" class="link-btn">Toggle review</button>
+        <button id="printBtn" class="link-btn">Print</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>© 2025 Web Exam Demo • Built for practice</small>
+  </footer>
+
+  <script>
+    // Exam data
+    const QUESTIONS = [
+      {
+        text: "Which HTML element semantically represents a self-contained composition, like a blog post?",
+        options: ["<div>", "<section>", "<article>", "<span>"],
+        answerIndex: 2,
+        explanation: "Use <article> for independent, distributable content (e.g., posts, news, comments).",
+      },
+      {
+        text: "Which CSS property creates space outside an element’s border?",
+        options: ["padding", "margin", "border-spacing", "gap"],
+        answerIndex: 1,
+        explanation: "Padding is inside the border; margin is outside.",
+      },
+      {
+        text: "What does 'const' in JavaScript guarantee?",
+        options: [
+          "The variable value cannot be changed at all",
+          "The variable cannot be reassigned to a new value",
+          "The object’s properties cannot be modified",
+          "It makes the variable global",
+        ],
+        answerIndex: 1,
+        explanation: "const prevents reassignment; object contents can still be mutated unless frozen.",
+      },
+      {
+        text: "Which attribute improves accessibility by describing images for screen readers?",
+        options: ["src", "alt", "title", "aria-label"],
+        answerIndex: 1,
+        explanation: "alt provides text alternatives for images.",
+      },
+      {
+        text: "Which HTTP status code indicates a successful request?",
+        options: ["200", "301", "404", "500"],
+        answerIndex: 0,
+        explanation: "200 OK indicates success.",
+      },
+    ];
+
+    // State
+    let started = false;
+    let submitted = false;
+    let reviewMode = false;
+    let selected = Array(QUESTIONS.length).fill(null);
+    let startTimestamp = null;
+    let timeLeft = 10 * 60; // seconds
+    let timerInterval = null;
+
+    // Elements
+    const introCard = document.getElementById('introCard');
+    const examCard = document.getElementById('examCard');
+    const resultCard = document.getElementById('resultCard');
+    const startBtn = document.getElementById('startBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const reviewBtn = document.getElementById('reviewBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const toggleReviewBtn = document.getElementById('toggleReviewBtn');
+    const printBtn = document.getElementById('printBtn');
+    const timer = document.getElementById('timer');
+    const questionsContainer = document.getElementById('questions');
+    const progressBar = document.getElementById('progressBar');
+    const unansweredNotice = document.getElementById('unansweredNotice');
+    const scoreValue = document.getElementById('scoreValue');
+    const accuracyValue = document.getElementById('accuracyValue');
+    const timeUsed = document.getElementById('timeUsed');
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+      const answered = selected.filter(x => x !== null).length;
+      const pct = Math.round((answered / QUESTIONS.length) * 100);
+      progressBar.style.width = pct + '%';
+      unansweredNotice.textContent = answered < QUESTIONS.length && started && !submitted
+        ? `Unanswered: ${QUESTIONS.length - answered} question(s).`
+        : '';
+    }
+
+    function renderQuestions() {
+      questionsContainer.innerHTML = '';
+      QUESTIONS.forEach((q, qi) => {
+        const qDiv = document.createElement('div');
+        qDiv.className = 'question';
+        const header = document.createElement('div');
+        header.className = 'q-header';
+        const title = document.createElement('div');
+        title.innerHTML = `<span class="q-index">Q${qi + 1}</span> ${q.text}`;
+        header.appendChild(title);
+
+        const tag = document.createElement('span');
+        tag.className = 'tag hidden';
+        header.appendChild(tag);
+
+        qDiv.appendChild(header);
+
+        const opts = document.createElement('div');
+        opts.className = 'options';
+
+        q.options.forEach((opt, oi) => {
+          const label = document.createElement('label');
+          label.className = 'option';
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = 'q' + qi;
+          input.value = oi;
+          input.checked = selected[qi] === oi;
+          input.addEventListener('change', () => {
+            selected[qi] = oi;
+            updateProgress();
+          });
+          const span = document.createElement('span');
+          span.textContent = opt;
+          label.appendChild(input);
+          label.appendChild(span);
+          opts.appendChild(label);
+        });
+
+        qDiv.appendChild(opts);
+
+        // Explanation (hidden until review)
+        const exp = document.createElement('p');
+        exp.className = 'notice hidden';
+        exp.textContent = 'Explanation: ' + q.explanation;
+        qDiv.appendChild(exp);
+
+        questionsContainer.appendChild(qDiv);
+      });
+      updateProgress();
+    }
+
+    function startExam() {
+      started = true;
+      submitted = false;
+      reviewMode = false;
+      selected = Array(QUESTIONS.length).fill(null);
+      timeLeft = 10 * 60;
+      startTimestamp = Date.now();
+
+      introCard.classList.add('hidden');
+      examCard.classList.remove('hidden');
+      resultCard.classList.add('hidden');
+      reviewBtn.classList.add('hidden');
+      toggleReviewBtn.textContent = 'Toggle review';
+
+      renderQuestions();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timer.textContent = formatTime(timeLeft);
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          submitExam();
+        }
+      }, 1000);
+    }
+
+    function grade() {
+      let correct = 0;
+      QUESTIONS.forEach((q, qi) => {
+        if (selected[qi] === q.answerIndex) correct++;
+      });
+      return { correct, total: QUESTIONS.length };
+    }
+
+    function submitExam() {
+      if (submitted) return;
+      submitted = true;
+      clearInterval(timerInterval);
+
+      // Mark options
+      const qNodes = Array.from(questionsContainer.children);
+      qNodes.forEach((qNode, qi) => {
+        const options = qNode.querySelectorAll('.option');
+        options.forEach((opt, oi) => {
+          opt.classList.remove('correct', 'incorrect');
+          if (oi === QUESTIONS[qi].answerIndex) {
+            opt.classList.add('correct');
+          } else if (selected[qi] === oi) {
+            opt.classList.add('incorrect');
+          }
+        });
+
+        const tag = qNode.querySelector('.tag');
+        const isCorrect = selected[qi] === QUESTIONS[qi].answerIndex;
+        tag.classList.remove('hidden', 'correct-tag', 'incorrect-tag');
+        tag.textContent = isCorrect ? 'Correct' : 'Incorrect';
+        tag.classList.add(isCorrect ? 'correct-tag' : 'incorrect-tag');
+
+        // Show explanations in review mode only
+        const exp = qNode.querySelector('.notice');
+        exp.classList.toggle('hidden', !reviewMode);
+      });
+
+      const { correct, total } = grade();
+      const used = Math.max(0, 10 * 60 - timeLeft);
+      scoreValue.textContent = `${correct} / ${total}`;
+      accuracyValue.textContent = Math.round((correct / total) * 100) + '%';
+      timeUsed.textContent = formatTime(used);
+
+      reviewBtn.classList.remove('hidden');
+      resultCard.classList.remove('hidden');
+    }
+
+    function toggleReview() {
+      reviewMode = !reviewMode;
+      toggleReviewBtn.textContent = reviewMode ? 'Hide review' : 'Toggle review';
+
+      const qNodes = Array.from(questionsContainer.children);
+      qNodes.forEach((qNode, qi) => {
+        const exp = qNode.querySelector('.notice');
+        if (!exp) return;
+        exp.classList.toggle('hidden', !reviewMode);
+      });
+    }
+
+    function reviewAnswers() {
+      reviewMode = true;
+      toggleReview();
+    }
+
+    function retry() {
+      startExam();
+    }
+
+    function reset() {
+      clearInterval(timerInterval);
+      started = false;
+      submitted = false;
+      reviewMode = false;
+      selected = Array(QUESTIONS.length).fill(null);
+      timeLeft = 10 * 60;
+      timer.textContent = formatTime(timeLeft);
+
+      introCard.classList.remove('hidden');
+      examCard.classList.add('hidden');
+      resultCard.classList.add('hidden');
+      questionsContainer.innerHTML = '';
+      progressBar.style.width = '0%';
+      unansweredNotice.textContent = '';
+    }
+
+    // Event listeners
+    startBtn.addEventListener('click', startExam);
+    submitBtn.addEventListener('click', submitExam);
+    reviewBtn.addEventListener('click', reviewAnswers);
+    retryBtn.addEventListener('click', retry);
+    resetBtn.addEventListener('click', reset);
+    toggleReviewBtn.addEventListener('click', toggleReview);
+    printBtn.addEventListener('click', () => window.print());
+
+    // Initial render
+    timer.textContent = formatTime(timeLeft);
+  </script>
+</body>
+</html>
